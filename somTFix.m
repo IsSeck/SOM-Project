@@ -1,10 +1,13 @@
-function [Vref,Vpos,nbObs,affectation,J_T]=somTFix(testData,nbNeurone_L,nbNeurone_l,T,Niter,p)
-%testData est une matrice où chaque ligne est une observation.
+function [Vref,Vpos,nbObs,affectation,J_T,iteration]=somTFix(testData,nbNeurone_L,nbNeurone_l,T,Niter,p)
 
-%   Vref : l'ensemble des vecteurs référents
-%   Vpos : position des vecteurs référents sur la carte
-%   nbObs: nombre d'observations associés à chaque neurone
-%   affectation: est le vecteur associe à chaque observation un neurone
+%tentative de mise Ã  jour en incorporant la condition d'arrÃªt liÃ©e Ã  la stabilisation des vecteurs rÃ©fÃ©rents
+
+%testData est une matrice oÃ¹ chaque ligne est une observation.
+
+%   Vref : l'ensemble des vecteurs rÃ©fÃ©rents
+%   Vpos : position des vecteurs rÃ©fÃ©rents sur la carte
+%   nbObs: nombre d'observations associÃ©s Ã  chaque neurone
+%   affectation: est le vecteur associe Ã  chaque observation un neurone
    
 %tic
     m=nbNeurone_l*nbNeurone_L;
@@ -15,7 +18,7 @@ function [Vref,Vpos,nbObs,affectation,J_T]=somTFix(testData,nbNeurone_L,nbNeuron
     [x y]=meshgrid(1:nbNeurone_L,1:nbNeurone_l);
     Vpos=[reshape(x,m,1),reshape(y,m,1)];
     
-%initialisation aléatoire des référents 
+%initialisation alÃ©atoire des rÃ©fÃ©rents 
     ech=ceil( size(testData,1)/m);
     
     if (ech<50)
@@ -26,20 +29,27 @@ function [Vref,Vpos,nbObs,affectation,J_T]=somTFix(testData,nbNeurone_L,nbNeuron
         Vref(i,:)=initialisationRef(testData,ech);
     end
 
-   
+   oldVref=Vref;
+   newVref=[];
   %distance entre les neurones
    dist=distN(Vpos,p);
    
-    for iteration=0:Niter
-   % iteration
-  
-    %phase d'affectation
-     [affectation,K_T,J_T]=Affect_Opt(testData,Vref,dist,T,p);
+   iteration=0;
+   while (~isequal(oldVref,newVref) && (iteration<Niter) )
+        
+       iteration=iteration+1;
+       %phase d'affectation
+     [affectation,K_T,J_T]=Affect_Opt(testData,oldVref,dist,T,p);
      
      
-     %phase de mise à jour de la valeur des référents
-      Vref=UpdateVref(testData,affectation,K_T);
-       
+     %phase de mise Ã  jour de la valeur des rÃ©fÃ©rents
+      newVref=UpdateVref(testData,affectation,K_T);
+      
+      if (~isequal(oldVref,newVref))
+         oldVref=newVref;
+         newVref=[];
+      end
+      
       for i=1:m
         nbObs(i)=length(find(affectation==i));
       end
