@@ -9,8 +9,14 @@ function [Vref,Vpos,nbObs,affectation,J_T,VrefInitial]=somTVar(testData,nbNeuron
 m=nbNeurone_l*nbNeurone_L;    
 %initialisation aléatoire des référents s'ils ne sont pas données en paramètre 
     if ( ~ isequal( size(VrefInitial), [m,size(testData,2)]) )
-        [VrefInitial,Vpos,~,~,~,~]=somTfixe(testData,nbNeurone_L,nbNeurone_l,Ti,100,p);
+        %[Vref,Vpos,nbObs,affectation,J_T,iteration]=somTFix(testData,nbNeurone_L,nbNeurone_l,T,Niter,p)
+        [VrefInitial,Vpos,~,~,~,~]=somTFix(testData,nbNeurone_L,nbNeurone_l,Ti,100,p);
+    else
+    %initialisation de Vpos sur la carte
+        [x y]=meshgrid(1:nbNeurone_L,1:nbNeurone_l);
+        Vpos=[reshape(x,m,1),reshape(y,m,1)];
     end
+
     
     nbObs=zeros(m,1);
 
@@ -22,19 +28,19 @@ m=nbNeurone_l*nbNeurone_L;
       T=Ti*(Tf/Ti)^(iteration/Niter);
 
   %phase d'affectation
-      affectation=Affect_Opt(testData,Vref,dist,T,p);
+      [affectation,K_T,J_T]=Affect_Opt(testData,Vref,dist,T,p);
 
   %phase de mise à jour de la valeur des référents
-        Vref=UpdateVref(testData,affectation,Vpos);
+        Vref=UpdateVref(testData,affectation,K_T);
 
         for i=1:m
           nbObs(i)=length(find(affectation==i));
         end
     end
 
-    for i=1:m
-
-        nbObs(i)=length(find(affectation==i));
-
-    end
+% visualisation des données
+    save temp.mat;
+    Extract('temp.mat');
+    %keyboard;
+    pause(3);
 end
